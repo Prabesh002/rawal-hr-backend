@@ -11,12 +11,3 @@ class TimeLogCreateDTO(BaseModel):
 class TimeLogUpdateDTO(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
-
-class TimeLogResponseDTO(BaseModel):
-    id: UUID
-    employee_id: UUID
-    start_time: datetime
-    end_time: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True

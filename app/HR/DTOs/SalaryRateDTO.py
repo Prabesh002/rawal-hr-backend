@@ -11,12 +11,3 @@ class SalaryRateCreateDTO(BaseModel):
 class SalaryRateUpdateDTO(BaseModel):
     hourly_rate: Optional[float] = Field(None, gt=0)
     effective_date: Optional[date] = None
-
-class SalaryRateResponseDTO(BaseModel):
-    id: UUID
-    employee_id: UUID
-    hourly_rate: float
-    effective_date: date
-
-    class Config:
-        from_attributes = True
