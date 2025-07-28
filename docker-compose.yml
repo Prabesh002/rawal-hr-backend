@@ -1,0 +1,43 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: pat-ai-db
+    env_file:
+      - .env 
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_HOST_PORT}:5432" 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    container_name: pat-ai
+    build: . 
+    env_file:
+      - .env 
+    ports:
+      - "${APP_PORT}:8000" 
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic 
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+      - ./docker-entrypoint.sh:/app/docker-entrypoint.sh
+    depends_on:
+      db:
+        condition: service_healthy 
+    restart: unless-stopped
+
+volumes:
+  postgres_data: 
+    driver: local
