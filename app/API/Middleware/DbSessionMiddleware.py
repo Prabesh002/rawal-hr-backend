@@ -3,10 +3,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from sqlalchemy.orm import Session
 from app.Core.Database.ApplicationDatabaseContext import createdSessions
-from app.Logger import get_logger
 
-
-logger = get_logger(__name__)
 
 class SessionCleanupMiddleware(BaseHTTPMiddleware):
     async def dispatch(
