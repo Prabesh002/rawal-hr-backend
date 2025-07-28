@@ -9,6 +9,11 @@ from app.Core.Config.settings import settings
 from app.Entities.BaseEntity import Base
 from app.Entities.Base.User import User
 from app.Tools.Entities.CalendarEventEntity import CalendarEventEntity
+from app.HR.Entities.EmployeeEntity import EmployeeEntity
+from app.HR.Entities.AttendanceEntity import AttendanceEntity
+from app.HR.Entities.SalaryRateEntity import SalaryRateEntity
+from app.HR.Entities.TimeLogEntity import TimeLogEntity
+from app.HR.Entities.PayrollEntity import PayrollEntity
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

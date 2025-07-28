@@ -1,7 +1,7 @@
 services:
   db:
     image: pgvector/pgvector:pg17
-    container_name: pat-ai-db
+    container_name: rawal-db
     env_file:
       - .env 
     environment:
@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
 
   app:
-    container_name: pat-ai
+    container_name: rawal-backend
     build: . 
     env_file:
       - .env 
