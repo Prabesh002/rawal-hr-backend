@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
 from sqlalchemy.orm import Session
-from app.HR.DTOs.TimeLogDTO import TimeLogCreateDTO, TimeLogUpdateDTO
 from app.HR.Entities.TimeLogEntity import TimeLogEntity
 from app.HR.Repositories.TimeLogRepository import TimeLogRepository
 
@@ -10,40 +10,44 @@ class TimeLogService:
         self.db = db
         self.time_log_repository = time_log_repository
 
-    def create_time_log(self, time_log_data: TimeLogCreateDTO) -> TimeLogEntity:
-        if time_log_data.end_time and time_log_data.start_time > time_log_data.end_time:
-            raise ValueError("Start time cannot be after end time.")
+    def start_shift(self, employee_id: UUID) -> TimeLogEntity:
+        active_shift = self.time_log_repository.find_active_by_employee_id(employee_id)
+        if active_shift:
+            raise ValueError("An active shift is already in progress. Please stop the current shift before starting a new one.")
 
-        db_time_log = TimeLogEntity(**time_log_data.model_dump())
-        self.db.add(db_time_log)
+        new_log = TimeLogEntity(
+            employee_id=employee_id,
+            start_time=datetime.now().astimezone() 
+        )
+        self.db.add(new_log)
         self.db.commit()
-        self.db.refresh(db_time_log)
-        return db_time_log
+        self.db.refresh(new_log)
+        return new_log
 
-    def update_time_log(self, time_log_id: UUID, time_log_data: TimeLogUpdateDTO) -> Optional[TimeLogEntity]:
-        db_time_log = self.time_log_repository.find_by_id(time_log_id)
-        if not db_time_log:
-            return None
+    def stop_shift(self, log_id: UUID, employee_id: UUID) -> Optional[TimeLogEntity]:
+        db_log = self.time_log_repository.find_by_id_and_employee_id(log_id, employee_id)
         
-        update_data = time_log_data.model_dump(exclude_unset=True)
-        start_time = update_data.get('start_time', db_time_log.start_time)
-        end_time = update_data.get('end_time', db_time_log.end_time)
+        if not db_log:
+            return None
 
-        if end_time and start_time > end_time:
-            raise ValueError("Start time cannot be after end time.")
-
-        for key, value in update_data.items():
-            setattr(db_time_log, key, value)
+        if db_log.end_time is not None:
+            raise ValueError("This shift has already been completed.")
             
-        self.db.commit()
-        self.db.refresh(db_time_log)
-        return db_time_log
+        db_log.end_time = datetime.now().astimezone()
 
-    def delete_time_log(self, time_log_id: UUID) -> bool:
-        db_time_log = self.time_log_repository.find_by_id(time_log_id)
-        if not db_time_log:
+        if db_log.start_time > db_log.end_time:
+            raise ValueError("Clock-out time cannot be before clock-in time.")
+
+        self.db.commit()
+        self.db.refresh(db_log)
+        return db_log
+
+    def delete_time_log(self, log_id: UUID, employee_id: UUID) -> bool:
+        """Deletes a time log record, ensuring ownership."""
+        db_log = self.time_log_repository.find_by_id_and_employee_id(log_id, employee_id)
+        if not db_log:
             return False
         
-        self.db.delete(db_time_log)
+        self.db.delete(db_log)
         self.db.commit()
         return True

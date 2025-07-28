@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from app.API.Middleware.AuthenticationMiddleware import AuthenticationMiddleware
 from app.API.Middleware.DbSessionMiddleware import SessionCleanupMiddleware
 from app.API.Middleware.DbSessionMiddleware import SessionCleanupMiddleware
 from fastapi import FastAPI, HTTPException, status
@@ -28,7 +29,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.add_middleware(AuthenticationMiddleware)
 app.add_middleware(
     SessionCleanupMiddleware
 )
