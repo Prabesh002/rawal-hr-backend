@@ -39,7 +39,7 @@ async def login(request: UserLogin):
         user_repo = get_user_repository()
         user = next((u for u in user_repo.find_all() if u.user_name == request.user_name), None)
         if not result:
-            return ApiResponseHelper.error("Invalid username or password")
+            return ApiResponseHelper.error("Invalid username or password", status_code=401)
 
         response = AccessTokenDto(
             access_token=result.access_token,
