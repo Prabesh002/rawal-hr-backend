@@ -46,7 +46,8 @@ async def login(request: UserLogin):
             token_type=result.token_type,
             user_response=UserResponse(
                 user_name=user.user_name,
-                id=user.id
+                id=user.id,
+                is_admin=user.is_admin,
             )
         )
 
@@ -61,13 +62,14 @@ async def register(request: UserCreate):
         user = user_service.create_user(
             UserDto(
                 user_name=request.user_name,
-                password=request.password
+                password=request.password,
             )
         )
 
         response = UserResponse(
             id=user.id,
             user_name=user.user_name,
+            is_admin=user.is_admin
         )
         return ApiResponseHelper.success(response, "User registered successfully")
     except ValueError as ve:

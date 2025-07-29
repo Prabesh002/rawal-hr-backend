@@ -24,5 +24,8 @@ fi
 echo "Running migrations..."
 poetry run alembic upgrade head
 
+echo "Seeding database with initial data..."
+poetry run python app/scripts/seed.py
+
 echo "Starting Uvicorn server..."
 poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/app
