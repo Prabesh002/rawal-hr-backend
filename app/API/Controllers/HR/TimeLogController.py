@@ -27,6 +27,30 @@ async def get_all_shifts(current_employee: EmployeeEntity = Depends(get_current_
     except Exception as e:
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
 
+@router.get("/active")
+async def get_active_shift(current_employee: EmployeeEntity = Depends(get_current_employee)):
+    try:
+        repo = get_time_log_repository()
+        active_shift = repo.find_active_by_employee_id(employee_id=current_employee.id)
+        if not active_shift:
+            return ApiResponseHelper.success(data=None, message="No active shift found.")
+        response = TimeLogResponse.model_validate(active_shift)
+        return ApiResponseHelper.success(response, "Active shift retrieved successfully.")
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
+
+@router.post("/start")
+async def start_shift(current_employee: EmployeeEntity = Depends(get_current_employee)):
+    try:
+        service = get_time_log_service()
+        new_log = service.start_shift(employee_id=current_employee.id)
+        response = TimeLogResponse.model_validate(new_log)
+        return ApiResponseHelper.success(response, "Shift started successfully.")
+    except ValueError as ve:
+        return ApiResponseHelper.error(str(ve), status_code=400)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
+
 @router.get("/employee/{employee_id}")
 async def get_shifts_by_employee_id(employee_id: UUID, current_employee: EmployeeEntity = Depends(get_current_employee)):
     try:
@@ -51,30 +75,7 @@ async def get_shift_by_id(log_id: UUID, current_employee: EmployeeEntity = Depen
         return ApiResponseHelper.success(response)
     except Exception as e:
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
-
-@router.get("/active")
-async def get_active_shift(current_employee: EmployeeEntity = Depends(get_current_employee)):
-    try:
-        repo = get_time_log_repository()
-        active_shift = repo.find_active_by_employee_id(employee_id=current_employee.id)
-        if not active_shift:
-            return ApiResponseHelper.success(data=None, message="No active shift found.")
-        response = TimeLogResponse.model_validate(active_shift)
-        return ApiResponseHelper.success(response, "Active shift retrieved successfully.")
-    except Exception as e:
-        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
-
-@router.post("/start")
-async def start_shift(current_employee: EmployeeEntity = Depends(get_current_employee)):
-    try:
-        service = get_time_log_service()
-        new_log = service.start_shift(employee_id=current_employee.id)
-        response = TimeLogResponse.model_validate(new_log)
-        return ApiResponseHelper.success(response, "Shift started successfully.")
-    except ValueError as ve:
-        return ApiResponseHelper.error(str(ve), status_code=400)
-    except Exception as e:
-        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
+    
 
 @router.put("/{log_id}/stop")
 async def stop_shift(log_id: UUID, current_employee: EmployeeEntity = Depends(get_current_employee)):
