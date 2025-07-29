@@ -18,13 +18,16 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         if request.url.path in PUBLIC_PATHS:
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return ApiResponseHelper.error(
-                "Authentication token is missing or invalid.", 
+                "Authentication token is missing or invalid.",
                 status_code=401
             )
 
@@ -33,22 +36,22 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         try:
             token_service = container.resolve(TokenService)
             user_repository = container.resolve(UserRepository)
-            
+
             payload = token_service.verify_token(token)
             if payload is None:
                 return ApiResponseHelper.error("Invalid or expired token.", status_code=401)
-            
+
             username = payload.get("sub")
             if username is None:
                 return ApiResponseHelper.error("Invalid token payload.", status_code=401)
-            
+
             db_user = user_repository.get_by_username(username)
             if db_user is None:
                 return ApiResponseHelper.error("User not found.", status_code=401)
-            
+
             request.state.user = db_user
 
         except Exception as e:
             return ApiResponseHelper.error(f"Authentication error: {e}", status_code=401)
-        response = await call_next(request)
-        return response
+
+        return await call_next(request)
