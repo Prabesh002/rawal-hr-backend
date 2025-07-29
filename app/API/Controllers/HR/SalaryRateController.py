@@ -1,18 +1,35 @@
 from uuid import UUID
-from fastapi import APIRouter
+from typing import List
+from fastapi import APIRouter, Depends
 from app.API.Dependencies.container import container
 from app.API.Utilities.ApiResponse import ApiResponseHelper
 from app.HR.Services.SalaryRateService import SalaryRateService
+from app.HR.Repositories.SalaryRateRepository import SalaryRateRepository
 from app.HR.DTOs.SalaryRateDTO import SalaryRateCreateDTO, SalaryRateUpdateDTO
 from app.HR.API.Requests.SalaryRateCreateRequest import SalaryRateCreateRequest
 from app.HR.API.Requests.SalaryRateUpdateRequest import SalaryRateUpdateRequest
 from app.HR.API.Response.SalaryRateResponse import SalaryRateResponse
+from app.API.Dependencies.Authentication import get_current_user
+from app.Entities.Base.User import User
 
 router = APIRouter()
 
 def get_salary_rate_service() -> SalaryRateService:
     return container.resolve(SalaryRateService)
 
+def get_salary_rate_repository() -> SalaryRateRepository:
+    return container.resolve(SalaryRateRepository)
+
+@router.get("/employee/{employee_id}")
+async def get_salary_rates_by_employee_id(employee_id: UUID):
+    try:
+        repo = get_salary_rate_repository()
+        rates = repo.find_by_employee_id(employee_id)
+        
+        response = [SalaryRateResponse.model_validate(rate) for rate in rates]
+        return ApiResponseHelper.success(response)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
 
 @router.post("/")
 async def create_salary_rate(request: SalaryRateCreateRequest):
@@ -29,8 +46,6 @@ async def create_salary_rate(request: SalaryRateCreateRequest):
         return ApiResponseHelper.error(str(ve), status_code=400)
     except Exception as e:
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
-
-
 
 @router.put("/{rate_id}")
 async def update_salary_rate(rate_id: UUID, request: SalaryRateUpdateRequest):
