@@ -1,17 +1,47 @@
 from uuid import UUID
-from fastapi import APIRouter
+from typing import List
+from fastapi import APIRouter, Depends
 from app.API.Dependencies.container import container
 from app.API.Utilities.ApiResponse import ApiResponseHelper
 from app.HR.Services.PayrollService import PayrollService
+from app.HR.Repositories.PayrollRepository import PayrollRepository
 from app.HR.DTOs.PayrollDTO import PayrollCreateDTO, PayrollUpdateDTO
 from app.HR.API.Requests.PayrollCreateRequest import PayrollCreateRequest
 from app.HR.API.Requests.PayrollUpdateRequest import PayrollUpdateRequest
 from app.HR.API.Response.PayrollResponse import PayrollResponse
+from app.API.Dependencies.Authentication import get_current_user
+from app.Entities.Base.User import User
 
 router = APIRouter()
 
 def get_payroll_service() -> PayrollService:
     return container.resolve(PayrollService)
+
+def get_payroll_repository() -> PayrollRepository:
+    return container.resolve(PayrollRepository)
+
+@router.get("/")
+async def get_all_payrolls():
+    try:
+        repo = get_payroll_repository()
+        payrolls = repo.find_all()
+        response = [PayrollResponse.model_validate(p) for p in payrolls]
+        return ApiResponseHelper.success(response)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
+
+@router.get("/{payroll_id}")
+async def get_payroll_by_id(payroll_id: UUID):
+    try:
+        repo = get_payroll_repository()
+        payroll = repo.find_by_id(payroll_id)
+        if not payroll:
+            return ApiResponseHelper.error("Payroll record not found.", status_code=404)
+        
+        response = PayrollResponse.model_validate(payroll)
+        return ApiResponseHelper.success(response)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
 
 @router.post("/")
 async def create_payroll_record(request: PayrollCreateRequest):
@@ -28,8 +58,6 @@ async def create_payroll_record(request: PayrollCreateRequest):
         return ApiResponseHelper.error(str(ve), status_code=400)
     except Exception as e:
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
-
-
 
 @router.put("/{payroll_id}")
 async def update_payroll_record(payroll_id: UUID, request: PayrollUpdateRequest):
@@ -52,8 +80,6 @@ async def update_payroll_record(payroll_id: UUID, request: PayrollUpdateRequest)
         return ApiResponseHelper.error(str(ve), status_code=400)
     except Exception as e:
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
-
-
 
 @router.delete("/{payroll_id}")
 async def delete_payroll_record(payroll_id: UUID):
