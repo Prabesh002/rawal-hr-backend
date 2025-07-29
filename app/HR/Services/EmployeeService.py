@@ -26,8 +26,12 @@ class EmployeeService:
             return None
 
         update_data = employee_data.model_dump(exclude_unset=True)
-        if 'email' in update_data and self.employee_repository.find_by_email(update_data['email']):
-             raise ValueError("Another employee with this email already exists.")
+        if 'email' in update_data:
+            new_email = update_data['email']
+            conflicting_employee = self.employee_repository.find_by_email(new_email)
+            
+            if conflicting_employee and conflicting_employee.id != db_employee.id:
+                raise ValueError("Another employee with this email already exists.")
 
         for key, value in update_data.items():
             setattr(db_employee, key, value)
@@ -35,6 +39,7 @@ class EmployeeService:
         self.db.commit()
         self.db.refresh(db_employee)
         return db_employee
+
 
     def delete_employee(self, employee_id: UUID) -> bool:
         db_employee = self.employee_repository.find_by_id(employee_id)

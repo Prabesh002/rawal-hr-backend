@@ -2,6 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter
 from app.API.Dependencies.container import container
 from app.API.Utilities.ApiResponse import ApiResponseHelper
+from app.HR.Repositories.EmployeeRepository import EmployeeRepository
 from app.HR.Services.EmployeeService import EmployeeService
 from app.HR.DTOs.EmployeeDTO import EmployeeCreateDTO, EmployeeUpdateDTO
 from app.HR.API.Requests.EmployeeCreateRequest import EmployeeCreateRequest
@@ -12,6 +13,32 @@ router = APIRouter()
 
 def get_employee_service() -> EmployeeService:
     return container.resolve(EmployeeService)
+
+def get_employee_repository() -> EmployeeRepository:
+    return container.resolve(EmployeeRepository)
+
+@router.get("/{employee_id}")
+async def get_employee_by_id(employee_id: UUID):
+    try:
+        employee_repo = get_employee_repository()
+        employee = employee_repo.find_by_id(employee_id)
+        if not employee:
+            return ApiResponseHelper.error("Employee not found.", status_code=404)
+        
+        response = EmployeeResponse.model_validate(employee)
+        return ApiResponseHelper.success(response)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
+
+@router.get("/")
+async def get_all_employees():
+    try:
+        employee_repo = get_employee_repository()
+        employees = employee_repo.find_all()
+        response = [EmployeeResponse.model_validate(emp) for emp in employees]
+        return ApiResponseHelper.success(response)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
 
 
 @router.post("/")
