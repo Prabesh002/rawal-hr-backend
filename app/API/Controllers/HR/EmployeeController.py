@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from app.API.Dependencies.container import container
 from app.API.Utilities.ApiResponse import ApiResponseHelper
 from app.HR.Repositories.EmployeeRepository import EmployeeRepository
@@ -8,6 +8,8 @@ from app.HR.DTOs.EmployeeDTO import EmployeeCreateDTO, EmployeeUpdateDTO
 from app.HR.API.Requests.EmployeeCreateRequest import EmployeeCreateRequest
 from app.HR.API.Requests.EmployeeUpdateRequest import EmployeeUpdateRequest
 from app.HR.API.Response.EmployeeResponse import EmployeeResponse
+from app.API.Dependencies.Authentication import get_current_user, get_current_admin_user
+from app.Entities.Base.User import User
 
 router = APIRouter()
 
@@ -31,10 +33,13 @@ async def get_employee_by_id(employee_id: UUID):
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
 
 @router.get("/")
-async def get_all_employees():
+async def get_all_employees(current_admin: User = Depends(get_current_user)):
     try:
         employee_repo = get_employee_repository()
         employees = employee_repo.find_all()
+        if not current_admin.is_admin:
+            employees = [emp for emp in employees if emp.user_id == current_admin.id]
+                    
         response = [EmployeeResponse.model_validate(emp) for emp in employees]
         return ApiResponseHelper.success(response)
     except Exception as e:
@@ -42,7 +47,7 @@ async def get_all_employees():
 
 
 @router.post("/")
-async def create_employee(request: EmployeeCreateRequest):
+async def create_employee(request: EmployeeCreateRequest, current_admin: User = Depends(get_current_admin_user)):
     try:
         employee_service = get_employee_service()
         employee_dto = EmployeeCreateDTO(**request.model_dump())
@@ -57,15 +62,29 @@ async def create_employee(request: EmployeeCreateRequest):
 
 
 @router.put("/{employee_id}")
-async def update_employee(employee_id: UUID, request: EmployeeUpdateRequest):
+async def update_employee(employee_id: UUID, request: EmployeeUpdateRequest, current_user: User = Depends(get_current_user)):
     try:
+        employee_repo = get_employee_repository()
+        employee_to_update = employee_repo.find_by_id(employee_id)
+
+        if not employee_to_update:
+            return ApiResponseHelper.error("Employee not found.", status_code=404)
+
+        is_owner = employee_to_update.user_id == current_user.id
+        if not current_user.is_admin and not is_owner:
+            return ApiResponseHelper.error("You do not have permission to update this employee profile.", status_code=403)
+
         employee_service = get_employee_service()
         employee_dto = EmployeeUpdateDTO(**request.model_dump(exclude_unset=True))
+        
         if not employee_dto.model_dump(exclude_unset=True):
             return ApiResponseHelper.error("No update data provided.", status_code=400)
+            
         updated_employee = employee_service.update_employee(employee_id, employee_dto)
+        
         if updated_employee is None:
             return ApiResponseHelper.error("Employee not found.", status_code=404)
+            
         response = EmployeeResponse.model_validate(updated_employee)
         return ApiResponseHelper.success(response, "Employee updated successfully.")
     except ValueError as ve:
@@ -75,7 +94,7 @@ async def update_employee(employee_id: UUID, request: EmployeeUpdateRequest):
 
 
 @router.delete("/{employee_id}")
-async def delete_employee(employee_id: UUID):
+async def delete_employee(employee_id: UUID, current_admin: User = Depends(get_current_admin_user)):
     try:
         employee_service = get_employee_service()
         success = employee_service.delete_employee(employee_id)
