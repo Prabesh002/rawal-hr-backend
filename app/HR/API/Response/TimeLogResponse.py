@@ -9,3 +9,6 @@ class TimeLogResponse(BaseModel):
     start_time: datetime
     end_time: Optional[datetime] = None
     created_at: datetime
+
+    class Config:
+        from_attributes = True

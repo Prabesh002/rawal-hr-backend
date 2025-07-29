@@ -14,3 +14,6 @@ class EmployeeResponse(BaseModel):
     hire_date: date
     termination_date: Optional[date] = None
     created_at: datetime
+
+    class Config:
+        from_attributes = True

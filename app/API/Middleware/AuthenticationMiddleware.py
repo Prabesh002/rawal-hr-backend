@@ -34,8 +34,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         token = auth_header.split(" ")[1]
 
         try:
-            token_service = container.resolve(TokenService)
-            user_repository = container.resolve(UserRepository)
+            token_service : TokenService = container.resolve(TokenService)
+            user_repository: UserRepository = container.resolve(UserRepository)
 
             payload = token_service.verify_token(token)
             if payload is None:

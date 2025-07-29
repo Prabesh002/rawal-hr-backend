@@ -8,3 +8,6 @@ class SalaryRateResponse(BaseModel):
     hourly_rate: float
     effective_date: date
     created_at: datetime
+
+    class Config:
+        from_attributes = True
