@@ -9,11 +9,6 @@ class Settings(BaseSettings):
     DATABASE_ECHO: bool
 
     LOG_LEVEL: str = 'INFO'
-    OPENAI_API_KEY: str
-    GEMINI_API_KEY: str
-
-    OPENAI_PROVIDER_NAME: str = "openai"
-    GEMINI_PROVIDER_NAME: str = "gemini"
 
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
