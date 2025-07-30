@@ -14,6 +14,11 @@ class EmployeeService:
         if self.employee_repository.find_by_email(employee_data.email):
             raise ValueError("Employee with this email already exists.")
         
+        if employee_data.user_id:
+            existing_employee = self.employee_repository.find_by_user_id(employee_data.user_id)
+            if existing_employee:
+                raise ValueError(f"An employee profile for this user already exists. The employee is '{existing_employee.first_name} {existing_employee.last_name}'.")
+        
         db_employee = EmployeeEntity(**employee_data.model_dump())
         self.db.add(db_employee)
         self.db.commit()

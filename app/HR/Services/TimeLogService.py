@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.HR.Entities.TimeLogEntity import TimeLogEntity
 from app.HR.Repositories.TimeLogRepository import TimeLogRepository
+from app.HR.DTOs.TimeLogDTO import TimeLogUpdateDTO
 
 class TimeLogService:
     def __init__(self, db: Session, time_log_repository: TimeLogRepository):
@@ -38,6 +39,29 @@ class TimeLogService:
         if db_log.start_time > db_log.end_time:
             raise ValueError("Clock-out time cannot be before clock-in time.")
 
+        self.db.commit()
+        self.db.refresh(db_log)
+        return db_log
+        
+    def edit_time_log(self, log_id: UUID, time_log_data: TimeLogUpdateDTO) -> Optional[TimeLogEntity]:
+        db_log = self.time_log_repository.find_by_id(log_id)
+        if not db_log:
+            return None
+
+        update_data = time_log_data.model_dump(exclude_unset=True)
+        
+        new_start = update_data.get('start_time', db_log.start_time)
+        new_end = update_data.get('end_time', db_log.end_time)
+
+        if 'end_time' in update_data and update_data['end_time'] is None:
+            new_end = None
+
+        if new_end is not None and new_start > new_end:
+            raise ValueError("End time cannot be before start time.")
+
+        for key, value in update_data.items():
+            setattr(db_log, key, value)
+        
         self.db.commit()
         self.db.refresh(db_log)
         return db_log

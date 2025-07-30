@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
+from typing import List
 from app.API.Dependencies.container import container
 from app.API.Requests.User.UserCreateRequest import UserCreate
 from app.API.Requests.User.UserLoginRequest import UserLogin
@@ -9,6 +10,8 @@ from app.Repositories.User.UserRepository import UserRepository
 from app.Services.User.UserService import UserService
 from sqlalchemy.orm import  Session
 from app.Dto.Token.AccessTokenDto import AccessTokenDto
+from app.API.Dependencies.Authentication import get_current_admin_user
+from app.Entities.Base.User import User
 
 
 router = APIRouter()
@@ -37,8 +40,8 @@ async def login(request: UserLogin):
             )
         )
         user_repo = get_user_repository()
-        user = next((u for u in user_repo.find_all() if u.user_name == request.user_name), None)
-        if not result:
+        user = user_repo.get_by_username(request.user_name)
+        if not result or not user:
             return ApiResponseHelper.error("Invalid username or password", status_code=401)
 
         response = AccessTokenDto(
@@ -76,3 +79,16 @@ async def register(request: UserCreate):
         return ApiResponseHelper.error(str(ve), status_code=400)
     except Exception as e:
         return ApiResponseHelper.error(str(e), status_code=500)
+
+
+@router.get("/users")
+async def get_all_users(current_admin: User = Depends(get_current_admin_user)):
+    try:
+        user_repo = get_user_repository()
+        users = user_repo.find_all()
+        
+        response = [UserResponse.model_validate(user) for user in users]
+        
+        return ApiResponseHelper.success(response)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)

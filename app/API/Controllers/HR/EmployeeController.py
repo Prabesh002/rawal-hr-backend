@@ -33,12 +33,16 @@ async def get_employee_by_id(employee_id: UUID):
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
 
 @router.get("/")
-async def get_all_employees(current_admin: User = Depends(get_current_user)):
+async def get_all_employees(current_user: User = Depends(get_current_user)):
     try:
         employee_repo = get_employee_repository()
-        employees = employee_repo.find_all()
-        if not current_admin.is_admin:
-            employees = [emp for emp in employees if emp.user_id == current_admin.id]
+        employees = []
+        if current_user.is_admin:
+            employees = employee_repo.find_all()
+        else:
+            employee = employee_repo.find_by_user_id(current_user.id)
+            if employee:
+                employees = [employee]
                     
         response = [EmployeeResponse.model_validate(emp) for emp in employees]
         return ApiResponseHelper.success(response)

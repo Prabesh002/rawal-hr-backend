@@ -6,9 +6,11 @@ from app.HR.Repositories.TimeLogRepository import TimeLogRepository
 from app.HR.Repositories.EmployeeRepository import EmployeeRepository
 from app.HR.Services.TimeLogService import TimeLogService
 from app.HR.API.Response.TimeLogResponse import TimeLogResponse
+from app.HR.API.Requests.TimeLogEditRequest import TimeLogEditRequest
+from app.HR.DTOs.TimeLogDTO import TimeLogUpdateDTO
 from app.HR.Entities.EmployeeEntity import EmployeeEntity
 from app.Entities.Base.User import User
-from app.API.Dependencies.Authentication import get_current_user
+from app.API.Dependencies.Authentication import get_current_user, get_current_admin_user
 from app.API.Dependencies.container import container
 
 router = APIRouter()
@@ -114,6 +116,31 @@ async def stop_shift(log_id: UUID, current_employee: EmployeeEntity = Depends(ge
         return ApiResponseHelper.error(str(ve), status_code=400)
     except Exception as e:
         return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
+
+
+@router.put("/{log_id}")
+async def edit_shift(log_id: UUID, request: TimeLogEditRequest, current_admin: User = Depends(get_current_admin_user)):
+    try:
+        service = get_time_log_service()
+        
+        edit_dto = TimeLogUpdateDTO(**request.model_dump(exclude_unset=True))
+        
+        if not edit_dto.model_dump(exclude_unset=True):
+            return ApiResponseHelper.error("No edit data provided.", status_code=400)
+
+        updated_log = service.edit_time_log(log_id=log_id, time_log_data=edit_dto)
+
+        if updated_log is None:
+            return ApiResponseHelper.error("Time log not found.", status_code=404)
+        
+        response = TimeLogResponse.model_validate(updated_log)
+        return ApiResponseHelper.success(response, "Time log updated successfully.")
+        
+    except ValueError as ve:
+        return ApiResponseHelper.error(str(ve), status_code=400)
+    except Exception as e:
+        return ApiResponseHelper.error(f"An unexpected error occurred: {e}", status_code=500)
+
 
 @router.delete("/{log_id}")
 async def delete_shift(log_id: UUID, current_user: User = Depends(get_current_user)):
