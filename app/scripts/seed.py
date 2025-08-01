@@ -10,8 +10,6 @@ from app.Core.Security.PasswordManager import PasswordManager
 from app.Entities.Base.User import User
 from app.Repositories.User.UserRepository import UserRepository
 
-ADMIN_USERNAME = "admin@gmail.com"
-ADMIN_PASSWORD = "kRd3n4q9@002"
 
 def seed_admin_user():
     print("--- Running Admin User Seeder ---")
@@ -21,18 +19,21 @@ def seed_admin_user():
     try:
         user_repository = UserRepository(db)
         
-        existing_admin = user_repository.get_by_username(ADMIN_USERNAME)
+        admin_username = settings.ADMIN_USERNAME
+        admin_password = settings.ADMIN_PASSWORD
+        
+        existing_admin = user_repository.get_by_username(admin_username)
         
         if existing_admin:
-            print(f"Admin user '{ADMIN_USERNAME}' already exists. Skipping.")
+            print(f"Admin user '{admin_username}' already exists. Skipping.")
             return
 
-        print(f"Admin user '{ADMIN_USERNAME}' not found. Creating...")
+        print(f"Admin user '{admin_username}' not found. Creating...")
         
-        hashed_password = PasswordManager.get_password_hash(ADMIN_PASSWORD)
+        hashed_password = PasswordManager.get_password_hash(admin_password)
         
         new_admin = User(
-            user_name=ADMIN_USERNAME,
+            user_name=admin_username,
             hashed_password=hashed_password,
             is_admin=True
         )

@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     DB_PASS: str
     DATABASE_ECHO: bool
 
+    ADMIN_USERNAME: str
+    ADMIN_PASSWORD: str
+
     LOG_LEVEL: str = 'INFO'
 
     JWT_SECRET_KEY: str
