@@ -10,10 +10,10 @@ done
 echo "Database is ready!"
 
 echo "Running database migrations..."
-alembic upgrade head
+poetry run alembic upgrade head
 
 echo "Seeding database with admin user if not exists..."
-python app/scripts/seed.py
+poetry run python app/scripts/seed.py
 
 echo "Starting Gunicorn server..."
-exec gunicorn -w "${WORKERS:-4}" -k uvicorn.workers.UvicornWorker app.main:app -b 0.0.0.0:8000
+exec poetry run gunicorn -w "${WORKERS:-4}" -k uvicorn.workers.UvicornWorker app.main:app -b 0.0.0.0:8000
